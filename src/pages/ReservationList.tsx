@@ -1,17 +1,16 @@
-
 import React, { useState } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import { Calendar, Clock, Check, X } from 'lucide-react';
 
-// Mock data for reservations
 const mockReservations = [
   {
     id: 1,
     roomName: 'Salle A101',
     date: '25/04/2025',
-    timeSlot: '14:00 - 16:00',
+    startHour: '14:00',
+    endHour: '16:00',
     status: 'en attente',
     location: 'Bâtiment Central',
     professor: 'Dr. Martin',
@@ -20,7 +19,8 @@ const mockReservations = [
     id: 2,
     roomName: 'Salle B201',
     date: '22/04/2025',
-    timeSlot: '10:00 - 12:00',
+    startHour: '10:00',
+    endHour: '12:00',
     status: 'confirmé',
     location: 'Annexe 1',
     professor: 'Dr. Dubois',
@@ -29,7 +29,8 @@ const mockReservations = [
     id: 3,
     roomName: 'Laboratoire F110',
     date: '28/04/2025',
-    timeSlot: '08:30 - 10:30',
+    startHour: '08:30',
+    endHour: '10:30',
     status: 'annulé',
     location: 'Annexe 2',
     professor: 'Dr. Bernard',
@@ -70,10 +71,10 @@ const ReservationList: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 fade-in">
+    <div className="space-y-6 p-4">
       <Breadcrumb items={[{ label: 'Mes réservations', path: '/reservations' }]} />
       
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
           {isAdmin ? 'Gestion des réservations' : 'Mes réservations'}
         </h1>
@@ -82,21 +83,21 @@ const ReservationList: React.FC = () => {
         </p>
       </div>
       
-      <div className="tab-container">
+      <div className="flex space-x-2 border-b">
         <button
-          className={`tab ${activeTab === 'en attente' ? 'tab-active' : ''}`}
+          className={`px-4 py-2 ${activeTab === 'en attente' ? 'border-b-2 border-primary font-semibold' : ''}`}
           onClick={() => setActiveTab('en attente')}
         >
           En attente
         </button>
         <button
-          className={`tab ${activeTab === 'confirmé' ? 'tab-active' : ''}`}
+          className={`px-4 py-2 ${activeTab === 'confirmé' ? 'border-b-2 border-primary font-semibold' : ''}`}
           onClick={() => setActiveTab('confirmé')}
         >
           Confirmées
         </button>
         <button
-          className={`tab ${activeTab === 'annulé' ? 'tab-active' : ''}`}
+          className={`px-4 py-2 ${activeTab === 'annulé' ? 'border-b-2 border-primary font-semibold' : ''}`}
           onClick={() => setActiveTab('annulé')}
         >
           Annulées
@@ -106,44 +107,49 @@ const ReservationList: React.FC = () => {
       {filteredReservations.length > 0 ? (
         <div className="space-y-4">
           {filteredReservations.map((reservation) => (
-            <div key={reservation.id} className="room-card flex flex-col md:flex-row md:items-center">
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-1">{reservation.roomName}</h3>
-                <p className="text-sm text-gray-600 mb-1">
-                  {isAdmin ? `Demandé par : ${reservation.professor}` : ''}
-                </p>
-                <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-600 mb-3">
-                  <div className="flex items-center mr-4">
-                    <Calendar size={16} className="mr-1" />
-                    {reservation.date}
-                  </div>
-                  <div className="flex items-center mr-4">
-                    <Clock size={16} className="mr-1" />
-                    {reservation.timeSlot}
-                  </div>
-                  <div>
-                    {reservation.location}
+            <div key={reservation.id} className="border rounded-lg p-4 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">{reservation.roomName}</h3>
+                  {isAdmin && (
+                    <p className="text-sm text-gray-600">
+                      Demandé par : {reservation.professor}
+                    </p>
+                  )}
+                  <div className="flex flex-col sm:flex-row gap-4 text-sm text-gray-600">
+                    <div className="flex items-center">
+                      <Calendar size={16} className="mr-1" />
+                      {reservation.date}
+                    </div>
+                    <div className="flex items-center">
+                      <Clock size={16} className="mr-1" />
+                      {reservation.startHour} - {reservation.endHour}
+                    </div>
+                    <div>
+                      {reservation.location}
+                    </div>
                   </div>
                 </div>
+                
+                {isAdmin && reservation.status === 'en attente' && (
+                  <div className="flex gap-2">
+                    <button
+                      className="btn btn-success flex items-center gap-1"
+                      onClick={() => handleUpdateStatus(reservation.id, 'confirmé')}
+                    >
+                      <Check size={16} />
+                      Confirmer
+                    </button>
+                    <button
+                      className="btn btn-danger flex items-center gap-1"
+                      onClick={() => handleUpdateStatus(reservation.id, 'annulé')}
+                    >
+                      <X size={16} />
+                      Annuler
+                    </button>
+                  </div>
+                )}
               </div>
-              {isAdmin && reservation.status === 'en attente' && (
-                <div className="flex space-x-2 mt-3 md:mt-0">
-                  <button
-                    className="btn btn-success flex items-center text-sm"
-                    onClick={() => handleUpdateStatus(reservation.id, 'confirmé')}
-                  >
-                    <Check size={16} className="mr-1" />
-                    Confirmer
-                  </button>
-                  <button
-                    className="btn btn-danger flex items-center text-sm"
-                    onClick={() => handleUpdateStatus(reservation.id, 'annulé')}
-                  >
-                    <X size={16} className="mr-1" />
-                    Annuler
-                  </button>
-                </div>
-              )}
             </div>
           ))}
         </div>

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
-import { Search, MapPin, Calendar, Clock, Filter, Check } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, MapPin, Filter } from 'lucide-react';
 
 // Mock data for rooms
 const mockRooms = [
@@ -70,7 +70,6 @@ const mockRooms = [
   },
 ];
 
-// Location options
 const locationOptions = [
   { value: 'all', label: 'Tous les lieux' },
   { value: 'Bâtiment Central', label: 'Bâtiment Central' },
@@ -82,202 +81,153 @@ const Rooms: React.FC = () => {
   const [rooms, setRooms] = useState(mockRooms);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('all');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [filterAvailable, setFilterAvailable] = useState(false);
+  const [startHour, setStartHour] = useState('');
+  const [endHour, setEndHour] = useState('');
   const { showToast } = useToast();
+  const { user } = useAuth();
 
-  // Filter rooms based on search query and filters
   const filteredRooms = rooms.filter((room) => {
-    // Filter by search query
     const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          room.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Filter by location
     const matchesLocation = selectedLocation === 'all' || room.location === selectedLocation;
-    
-    // Filter by availability
-    const matchesAvailability = !filterAvailable || room.available;
-    
-    return matchesSearch && matchesLocation && matchesAvailability;
+    return matchesSearch && matchesLocation;
   });
 
   const handleReservation = (roomId: number) => {
+    if (!startHour || !endHour) {
+      showToast('Veuillez sélectionner les heures de début et de fin', 'error');
+      return;
+    }
+
     const room = rooms.find(r => r.id === roomId);
     if (room) {
       showToast(`Demande de réservation envoyée pour la salle ${room.name}. En attente de confirmation.`, 'info');
     }
   };
 
-  // Reset all filters
   const resetFilters = () => {
     setSearchQuery('');
     setSelectedLocation('all');
-    setSelectedDate('');
-    setFilterAvailable(false);
+    setStartHour('');
+    setEndHour('');
   };
 
   return (
-    <div className="space-y-6 fade-in">
+    <div className="space-y-6 p-4 max-w-7xl mx-auto">
       <Breadcrumb items={[{ label: 'Salles', path: '/rooms' }]} />
       
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
           Salles disponibles
         </h1>
-        <p className="text-muted-foreground">Trouvez et réservez la salle idéale pour vos cours</p>
+        <p className="text-muted-foreground">
+          Trouvez et réservez la salle idéale pour vos cours
+        </p>
       </div>
       
-      {/* Filters */}
-      <div className="filter-container">
-        <div className="filter-item">
-          <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <label htmlFor="search" className="text-sm font-medium">
             Recherche
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} className="text-gray-400" />
-            </div>
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             <input
               id="search"
               type="text"
-              className="form-input pl-10"
-              placeholder="Nom ou description de la salle"
+              className="w-full pl-10 pr-4 py-2 border rounded-md"
+              placeholder="Nom ou description"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
         
-        <div className="filter-item">
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="space-y-2">
+          <label htmlFor="location" className="text-sm font-medium">
             Localisation
           </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MapPin size={16} className="text-gray-400" />
-            </div>
-            <select
-              id="location"
-              className="form-input pl-10"
-              value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
-            >
-              {locationOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            id="location"
+            className="w-full px-4 py-2 border rounded-md"
+            value={selectedLocation}
+            onChange={(e) => setSelectedLocation(e.target.value)}
+          >
+            {locationOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
-        
-        <div className="filter-item">
-          <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-            Date
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Calendar size={16} className="text-gray-400" />
-            </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Horaires</label>
+          <div className="grid grid-cols-2 gap-2">
             <input
-              id="date"
-              type="date"
-              className="form-input pl-10"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              type="time"
+              className="px-4 py-2 border rounded-md"
+              value={startHour}
+              onChange={(e) => setStartHour(e.target.value)}
             />
-          </div>
-        </div>
-        
-        <div className="filter-item">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Disponibilité
-          </label>
-          <div className="flex items-center">
             <input
-              id="available"
-              type="checkbox"
-              className="h-4 w-4 text-primary border-gray-300 rounded"
-              checked={filterAvailable}
-              onChange={(e) => setFilterAvailable(e.target.checked)}
+              type="time"
+              className="px-4 py-2 border rounded-md"
+              value={endHour}
+              onChange={(e) => setEndHour(e.target.value)}
             />
-            <label htmlFor="available" className="ml-2 text-sm text-gray-600">
-              Seulement les salles disponibles
-            </label>
           </div>
         </div>
       </div>
-      
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-center">
-        <p className="text-sm text-gray-500 mb-2 sm:mb-0">
+
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-500">
           {filteredRooms.length} salle{filteredRooms.length !== 1 ? 's' : ''} trouvée{filteredRooms.length !== 1 ? 's' : ''}
         </p>
         <button
-          className="btn btn-outline flex items-center text-sm"
+          className="btn btn-outline flex items-center gap-2"
           onClick={resetFilters}
         >
-          <Filter size={16} className="mr-1" />
+          <Filter size={16} />
           Réinitialiser les filtres
         </button>
       </div>
       
-      {/* Room List */}
-      {filteredRooms.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRooms.map((room) => (
-            <div key={room.id} className="room-card">
-              <div className="relative h-40 mb-4 overflow-hidden rounded-lg">
-                <img 
-                  src={room.image} 
-                  alt={room.name} 
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-2 right-2">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    room.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {room.available ? 'Disponible' : 'Occupée'}
-                  </span>
-                </div>
-              </div>
-              
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredRooms.map((room) => (
+          <div key={room.id} className="border rounded-lg p-4 space-y-4">
+            <div>
               <h3 className="text-lg font-semibold">{room.name}</h3>
-              <p className="text-sm text-gray-600 mb-2">{room.description}</p>
-              
-              <div className="flex items-center text-sm text-gray-500 mb-3">
-                <MapPin size={16} className="mr-1" />
-                {room.location}
-                <span className="mx-2">•</span>
-                <span>{room.capacity} places</span>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 mb-4">
-                {room.features.map((feature, index) => (
-                  <span key={index} className="bg-muted px-2 py-1 rounded-md text-xs">
-                    {feature}
-                  </span>
-                ))}
-              </div>
-              
-              {room.available ? (
-                <button
-                  className="btn btn-primary w-full"
-                  onClick={() => handleReservation(room.id)}
-                >
-                  Réserver
-                </button>
-              ) : (
-                <div className="text-sm text-red-600 mt-2">
-                  Réservée par {room.reservedBy}
-                </div>
-              )}
+              <p className="text-sm text-gray-600">{room.description}</p>
             </div>
-          ))}
-        </div>
-      ) : (
+            
+            <div className="flex items-center text-sm text-gray-500">
+              <MapPin size={16} className="mr-1" />
+              {room.location}
+              <span className="mx-2">•</span>
+              <span>{room.capacity} places</span>
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              {room.features.map((feature, index) => (
+                <span key={index} className="bg-muted px-2 py-1 rounded-md text-xs">
+                  {feature}
+                </span>
+              ))}
+            </div>
+            
+            <button
+              className="btn btn-primary w-full"
+              onClick={() => handleReservation(room.id)}
+            >
+              Réserver
+            </button>
+          </div>
+        ))}
+      </div>
+      
+      {filteredRooms.length === 0 && (
         <div className="text-center py-10">
-          <div className="text-4xl mb-4">🔍</div>
           <h3 className="text-lg font-semibold mb-2">Aucune salle trouvée</h3>
           <p className="text-gray-500">Veuillez ajuster vos filtres de recherche</p>
         </div>
