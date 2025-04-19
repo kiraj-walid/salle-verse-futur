@@ -1,106 +1,114 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { useToast } from '../contexts/ToastContext';
 
-const Login: React.FC = () => {
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading, error } = useAuth();
+  const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { showToast } = useToast();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     
     try {
       await login(email, password);
       navigate('/dashboard');
-      showToast('Connexion réussie !', 'success');
     } catch (err) {
-      // Error is already handled in the AuthContext
+      setError('Email ou mot de passe invalide');
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
-      <div className="login-card w-full max-w-md fade-in">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Salle<span className="text-primary">Verse</span>Futur</h1>
-          <p className="text-muted-foreground">Système de réservation de salles universitaires</p>
+      <div className="w-full max-w-md p-8 space-y-6 bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Salle<span className="text-indigo-600">Verse</span>Futur
+          </h1>
+          <p className="text-gray-600">
+            Système de réservation de salles universitaires
+          </p>
         </div>
-        
-        <form onSubmit={handleSubmit}>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
+            <div className="p-3 text-sm bg-red-50 text-red-600 rounded-lg">
               {error}
             </div>
           )}
-          
-          <div className="form-group">
-            <label htmlFor="email" className="form-label">Email</label>
+
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
             <input
               id="email"
               type="email"
-              className="form-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="email@university.fr"
+              required
             />
           </div>
-          
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">Mot de passe</label>
+
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Mot de passe
+            </label>
             <input
               id="password"
               type="password"
-              className="form-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="••••••••"
+              required
             />
           </div>
-          
-          <div className="flex justify-between mb-6">
+
+          <div className="flex items-center justify-between text-sm">
             <div className="flex items-center">
-              <input 
-                id="remember" 
-                type="checkbox" 
-                className="h-4 w-4 text-primary border-gray-300 rounded"
+              <input
+                id="remember"
+                type="checkbox"
+                className="h-4 w-4 text-indigo-600 rounded border-gray-300"
               />
-              <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
+              <label htmlFor="remember" className="ml-2 text-gray-600">
                 Se souvenir de moi
               </label>
             </div>
-            <a href="#" className="text-sm text-primary hover:underline">
+            <a href="#" className="text-indigo-600 hover:text-indigo-500">
               Mot de passe oublié ?
             </a>
           </div>
-          
+
           <button
             type="submit"
-            className="btn btn-primary w-full"
-            disabled={loading}
+            className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition-colors"
           >
-            {loading ? 'Connexion...' : 'Se connecter'}
+            Se connecter
           </button>
         </form>
-        
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Besoin d'aide ? <a href="#" className="text-primary hover:underline">Contactez-nous</a>
-          </p>
+
+        <div className="text-center">
+          <a href="#" className="text-sm text-indigo-600 hover:text-indigo-500">
+            Besoin d'aide ?
+          </a>
         </div>
-        
-        <div className="mt-8 p-3 bg-muted rounded-md text-sm text-center">
-          <p className="text-gray-600 mb-1">Démonstration</p>
-          <p className="text-xs text-gray-500">
-            Professeur: prof@university.fr / password<br />
-            Admin: admin@university.fr / password
+
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <p className="text-sm text-gray-600 text-center mb-2">
+            Démonstration
           </p>
+          <div className="text-xs text-gray-500 text-center space-y-1">
+            <p>Professeur: prof@university.fr / password</p>
+            <p>Admin: admin@university.fr / password</p>
+          </div>
         </div>
       </div>
     </div>
