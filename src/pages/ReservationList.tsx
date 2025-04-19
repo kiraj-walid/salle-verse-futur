@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,9 +48,14 @@ const ReservationList: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
-  const filteredReservations = reservations.filter(
-    (reservation) => reservation.status === activeTab
-  );
+  const filteredReservations = reservations.filter((reservation) => {
+    // For admin, show all professors' reservations
+    if (isAdmin) {
+      return reservation.status === activeTab;
+    }
+    // For professors, show only their own reservations
+    return reservation.professor === user?.name && reservation.status === activeTab;
+  });
 
   const handleUpdateStatus = (id: number, newStatus: ReservationStatus) => {
     if (!isAdmin) {
@@ -72,14 +78,14 @@ const ReservationList: React.FC = () => {
 
   return (
     <div className="space-y-6 p-4">
-      <Breadcrumb items={[{ label: 'Mes réservations', path: '/reservations' }]} />
+      <Breadcrumb items={[{ label: 'Réservations', path: '/reservations' }]} />
       
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
           {isAdmin ? 'Gestion des réservations' : 'Mes réservations'}
         </h1>
         <p className="text-muted-foreground">
-          {isAdmin ? 'Gérez les demandes de réservation' : 'Consultez vos réservations'}
+          {isAdmin ? 'Gérez les demandes de réservation des professeurs' : 'Consultez vos réservations'}
         </p>
       </div>
       
