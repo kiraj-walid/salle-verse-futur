@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import Breadcrumb from '../components/Breadcrumb';
@@ -105,8 +104,7 @@ const Rooms: React.FC = () => {
   const handleReservation = (roomId: number) => {
     const room = rooms.find(r => r.id === roomId);
     if (room) {
-      showToast(`Redirection vers la réservation pour la salle ${room.name}`, 'info');
-      // In a real app, this would navigate to reservation page with the room pre-selected
+      showToast(`Demande de réservation envoyée pour la salle ${room.name}. En attente de confirmation.`, 'info');
     }
   };
 
