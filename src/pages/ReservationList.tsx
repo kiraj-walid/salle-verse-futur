@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import { Calendar, Clock, Check, X } from 'lucide-react';
 
+// Mock data des réservations
 const mockReservations = [
   {
     id: 1,
@@ -61,6 +62,28 @@ const mockReservations = [
 type ReservationStatus = 'en attente' | 'confirmé' | 'annulé';
 type TabType = 'en attente' | 'confirmé' | 'annulé';
 
+// Petite fonction pour un tag coloré par statut
+const StatusBadge: React.FC<{ status: ReservationStatus }> = ({ status }) => {
+  let color = '';
+  let label = '';
+  switch (status) {
+    case 'confirmé':
+      color = 'bg-green-100 text-green-800 border-green-300';
+      label = 'Confirmée'; break;
+    case 'en attente':
+      color = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      label = 'En attente'; break;
+    case 'annulé':
+      color = 'bg-red-100 text-red-800 border-red-300';
+      label = 'Annulée'; break;
+    default:
+      label = status;
+  }
+  return (
+    <span className={`border px-2 py-0.5 rounded text-xs font-medium ${color}`}>{label}</span>
+  );
+};
+
 const ReservationList: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('en attente');
   const [reservations, setReservations] = useState(mockReservations);
@@ -68,38 +91,30 @@ const ReservationList: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
-  const filteredReservations = reservations.filter((reservation) => {
-    // For admin, show all professors' reservations
-    if (isAdmin) {
-      return reservation.status === activeTab;
-    }
-    // For professors, show only their own reservations
-    return reservation.professor === user?.name && reservation.status === activeTab;
-  });
+  // ADMIN : filtrage par onglet
+  const filteredReservations = isAdmin
+    ? reservations.filter((reservation) => reservation.status === activeTab)
+    : reservations.filter((reservation) => reservation.professor === user?.name);
 
   const handleUpdateStatus = (id: number, newStatus: ReservationStatus) => {
     if (!isAdmin) {
       showToast("Vous n'avez pas les droits pour effectuer cette action", 'error');
       return;
     }
-
-    setReservations(reservations.map(res => 
+    setReservations(reservations.map(res =>
       res.id === id ? { ...res, status: newStatus } : res
     ));
-    
     const statusMessage = {
       'confirmé': 'confirmée',
       'annulé': 'annulée',
       'en attente': 'mise en attente'
     }[newStatus];
-    
     showToast(`Réservation ${statusMessage} avec succès`, 'success');
   };
 
   return (
     <div className="space-y-6 p-4">
       <Breadcrumb items={[{ label: 'Réservations', path: '/reservations' }]} />
-      
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
           {isAdmin ? 'Gestion des réservations' : 'Mes réservations'}
@@ -108,35 +123,40 @@ const ReservationList: React.FC = () => {
           {isAdmin ? 'Gérez les demandes de réservation des professeurs' : 'Consultez vos réservations'}
         </p>
       </div>
-      
-      <div className="flex space-x-2 border-b">
-        <button
-          className={`px-4 py-2 ${activeTab === 'en attente' ? 'border-b-2 border-primary font-semibold' : ''}`}
-          onClick={() => setActiveTab('en attente')}
-        >
-          En attente
-        </button>
-        <button
-          className={`px-4 py-2 ${activeTab === 'confirmé' ? 'border-b-2 border-primary font-semibold' : ''}`}
-          onClick={() => setActiveTab('confirmé')}
-        >
-          Confirmées
-        </button>
-        <button
-          className={`px-4 py-2 ${activeTab === 'annulé' ? 'border-b-2 border-primary font-semibold' : ''}`}
-          onClick={() => setActiveTab('annulé')}
-        >
-          Annulées
-        </button>
-      </div>
-      
+      {isAdmin && (
+        <div className="flex space-x-2 border-b">
+          <button
+            className={`px-4 py-2 ${activeTab === 'en attente' ? 'border-b-2 border-primary font-semibold' : ''}`}
+            onClick={() => setActiveTab('en attente')}
+          >
+            En attente
+          </button>
+          <button
+            className={`px-4 py-2 ${activeTab === 'confirmé' ? 'border-b-2 border-primary font-semibold' : ''}`}
+            onClick={() => setActiveTab('confirmé')}
+          >
+            Confirmées
+          </button>
+          <button
+            className={`px-4 py-2 ${activeTab === 'annulé' ? 'border-b-2 border-primary font-semibold' : ''}`}
+            onClick={() => setActiveTab('annulé')}
+          >
+            Annulées
+          </button>
+        </div>
+      )}
+
       {filteredReservations.length > 0 ? (
+        // Liste pour admin (filtrée) OU prof (toutes ses réservations)
         <div className="space-y-4">
           {filteredReservations.map((reservation) => (
             <div key={reservation.id} className="border rounded-lg p-4 space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">{reservation.roomName}</h3>
+                  <div className="flex flex-row items-center gap-2">
+                    <h3 className="text-lg font-semibold">{reservation.roomName}</h3>
+                    <StatusBadge status={reservation.status as ReservationStatus} />
+                  </div>
                   {isAdmin && (
                     <p className="text-sm text-gray-600">
                       Demandé par : {reservation.professor}
@@ -156,7 +176,6 @@ const ReservationList: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
                 {isAdmin && reservation.status === 'en attente' && (
                   <div className="flex gap-2">
                     <button
@@ -182,14 +201,18 @@ const ReservationList: React.FC = () => {
       ) : (
         <div className="text-center py-10">
           <h3 className="text-lg font-semibold mb-2">
-            Aucune réservation {activeTab}
+            {isAdmin
+              ? `Aucune réservation ${activeTab}`
+              : `Aucune réservation`}
           </h3>
           <p className="text-gray-500">
-            {activeTab === 'en attente' 
-              ? 'Aucune réservation en attente de traitement.' 
-              : activeTab === 'confirmé'
-              ? 'Aucune réservation confirmée.'
-              : 'Aucune réservation annulée.'}
+            {isAdmin
+              ? (activeTab === 'en attente'
+                  ? 'Aucune réservation en attente de traitement.'
+                  : activeTab === 'confirmé'
+                  ? 'Aucune réservation confirmée.'
+                  : 'Aucune réservation annulée.')
+              : `Vous n'avez pas de réservations pour le moment.`}
           </p>
         </div>
       )}
