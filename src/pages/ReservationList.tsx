@@ -4,6 +4,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import { Calendar, Clock, Check, X } from 'lucide-react';
+import { Button } from '@/components/ui/button'; // Use shadcn/ui button
 
 // Mock data des réservations
 const mockReservations = [
@@ -91,7 +92,7 @@ const ReservationList: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
-  // ADMIN : filtrage par onglet
+  // Pour admin : filtrage par status d'onglet, pour prof : toutes ses réservations non triées
   const filteredReservations = isAdmin
     ? reservations.filter((reservation) => reservation.status === activeTab)
     : reservations.filter((reservation) => reservation.professor === user?.name);
@@ -147,54 +148,63 @@ const ReservationList: React.FC = () => {
       )}
 
       {filteredReservations.length > 0 ? (
-        // Liste pour admin (filtrée) OU prof (toutes ses réservations)
         <div className="space-y-4">
           {filteredReservations.map((reservation) => (
-            <div key={reservation.id} className="border rounded-lg p-4 space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="flex flex-row items-center gap-2">
-                    <h3 className="text-lg font-semibold">{reservation.roomName}</h3>
-                    <StatusBadge status={reservation.status as ReservationStatus} />
+            <div
+              key={reservation.id}
+              className="relative border rounded-xl p-6 bg-white shadow-md flex flex-col justify-between"
+              style={{ minHeight: 150 }}
+            >
+              {/* Status badge top-right */}
+              <div className="absolute top-4 right-4">
+                <StatusBadge status={reservation.status as ReservationStatus} />
+              </div>
+              {/* Title top-left */}
+              <div className="flex flex-row items-center gap-2 mb-2">
+                <h3 className="text-lg font-semibold">{reservation.roomName}</h3>
+              </div>
+              {/* Infos */}
+              <div className="space-y-2 flex-1">
+                {isAdmin && (
+                  <p className="text-sm text-gray-600">
+                    Demandé par : {reservation.professor}
+                  </p>
+                )}
+                <div className="flex flex-col sm:flex-row gap-4 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <Calendar size={16} className="mr-1" />
+                    {reservation.date}
                   </div>
-                  {isAdmin && (
-                    <p className="text-sm text-gray-600">
-                      Demandé par : {reservation.professor}
-                    </p>
-                  )}
-                  <div className="flex flex-col sm:flex-row gap-4 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <Calendar size={16} className="mr-1" />
-                      {reservation.date}
-                    </div>
-                    <div className="flex items-center">
-                      <Clock size={16} className="mr-1" />
-                      {reservation.startHour} - {reservation.endHour}
-                    </div>
-                    <div>
-                      {reservation.location}
-                    </div>
+                  <div className="flex items-center">
+                    <Clock size={16} className="mr-1" />
+                    {reservation.startHour} - {reservation.endHour}
+                  </div>
+                  <div>
+                    {reservation.location}
                   </div>
                 </div>
-                {isAdmin && reservation.status === 'en attente' && (
-                  <div className="flex gap-2">
-                    <button
-                      className="btn btn-success flex items-center gap-1"
-                      onClick={() => handleUpdateStatus(reservation.id, 'confirmé')}
-                    >
-                      <Check size={16} />
-                      Confirmer
-                    </button>
-                    <button
-                      className="btn btn-danger flex items-center gap-1"
-                      onClick={() => handleUpdateStatus(reservation.id, 'annulé')}
-                    >
-                      <X size={16} />
-                      Annuler
-                    </button>
-                  </div>
-                )}
               </div>
+              {/* Actions */}
+              {isAdmin && reservation.status === 'en attente' && (
+                <div className="absolute bottom-4 right-4 flex gap-2">
+                  <Button
+                    variant="default"
+                    className="flex items-center gap-1"
+                    onClick={() => handleUpdateStatus(reservation.id, 'confirmé')}
+                  >
+                    <Check size={16} />
+                    Confirmer
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex items-center gap-1"
+                    onClick={() => handleUpdateStatus(reservation.id, 'annulé')}
+                  >
+                    <X size={16} />
+                    Annuler
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>
